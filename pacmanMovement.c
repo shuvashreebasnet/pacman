@@ -2,6 +2,7 @@
 
 # define MAP_HEIGHT 9
 # define MAP_WIDTH 19
+# define PELLET_POINTS 10
 
 typedef struct {
 	int row;
@@ -19,6 +20,30 @@ static const char map[MAP_HEIGHT][MAP_WIDTH + 1] = {
 	"#.................#",
 	"###################"
 };
+
+static char board[MAP_HEIGHT][MAP_WIDTH + 1];
+
+static int score = 0; 
+static int pelletsLeft = 0;
+static void initBoard(void) {
+	int row;
+	int column;
+	pelletsLeft = 0;
+	for(row=0; row < MAP_HEIGHT; row++) {
+		strcpy(board[row], map[row]);
+		for(column = 0; column < MAP_WIDTH; column++) {
+			if(board[row][column] = '.') {
+				pelletsLeft++;
+			}
+		}
+	}
+}
+
+static void pelletEaten(Position pacman) {
+	if (board[pacman.row][pacman.column] == '.') {
+		board[pacman.row][pacman.colum] = ' ';
+		score += PELLET_POINTS;
+		pelletsLeft--;
 
 static int isWalkable(int row, int column) {
 	return row >= 0 && row < MAP_HEIGHT &&
@@ -76,6 +101,9 @@ static void drawMap(Position pacman) {
 int main(void) {
 	Position pacman = {1, 1};
 	char direction;
+
+	initBoard()'
+	pelletEaten(pacman);
 
 	do {
 		drawMap(pacman);
