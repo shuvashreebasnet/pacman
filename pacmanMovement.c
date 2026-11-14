@@ -57,6 +57,7 @@ static int isWalkable(int row, int column) {
 static void movePacman(Position *pacman, char direction) {
 	int newRow = pacman -> row;
 	int newColumn = pacman -> column;
+	pelletEaten(*pacman);
 
 	switch (direction) {
 		case 'w':
