@@ -33,7 +33,7 @@ static void initBoard(void) {
 	for(row=0; row < MAP_HEIGHT; row++) {
 		strcpy(board[row], map[row]);
 		for(column = 0; column < MAP_WIDTH; column++) {
-			if(board[row][column] = '.') {
+			if(board[row][column] == '.') {
 				pelletsLeft++;
 			}
 		}
