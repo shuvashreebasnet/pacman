@@ -93,7 +93,7 @@ static void drawMap(Position pacman) {
 			if (row == pacman.row && column == pacman.column) {
 				putchar('C');
 			} else {
-				putchar(map[row][column]);
+				putchar(board[row][column]);
 			}
 		}
 
