@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 # define MAP_HEIGHT 9
 # define MAP_WIDTH 19
@@ -41,9 +42,11 @@ static void initBoard(void) {
 
 static void pelletEaten(Position pacman) {
 	if (board[pacman.row][pacman.column] == '.') {
-		board[pacman.row][pacman.colum] = ' ';
+		board[pacman.row][pacman.column] = ' ';
 		score += PELLET_POINTS;
 		pelletsLeft--;
+	}
+}
 
 static int isWalkable(int row, int column) {
 	return row >= 0 && row < MAP_HEIGHT &&
@@ -102,7 +105,7 @@ int main(void) {
 	Position pacman = {1, 1};
 	char direction;
 
-	initBoard()'
+	initBoard();
 	pelletEaten(pacman);
 
 	do {
