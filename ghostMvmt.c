@@ -1,3 +1,4 @@
+// Members: Alina Avramenko, Angelina Nyguyen, Becca Penno, Danica Jacutin, Shuvashree Basnet
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
