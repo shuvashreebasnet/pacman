@@ -124,6 +124,119 @@ static void clearScreen(void) {
     printf("\033[2J\033[H");
 }
 
+static void showStartScreen(void){
+	clearScreen();
+
+	printf(PACMAN_YELLOW);
+	printf(" - - - - - - - - - - - - - - - - - - - - - - \n");
+	printf("                   PAC - MAN                 \n");
+	printf(" - - - - - - - - - - - - - - - - - - - - - - \n");
+	printf(RESET);
+
+
+	 printf("\nWelcome to Pac-Man!\n\n");
+    printf("HOW TO PLAY:\n");
+    printf("  W - Move Up\n");
+    printf("  A - Move Left\n");
+    printf("  S - Move Down\n");
+    printf("  D - Move Right\n");
+    printf("  Q - Quit the game\n\n");
+
+    printf("Collect all the pellets to win!\n");
+    printf("Avoid the ghosts! You have 3 lives.\n\n");
+
+    printf(PACMAN_YELLOW);
+    printf("Press P to Play or Q to Quit\n");
+    printf(RESET);
+
+}
+
+static void showWinScreen(int finalScore){
+	clearScreen();
+
+	printf(PACMAN_YELLOW);
+	printf(" - - - - - - - - - - - - - - - - - - - - - - \n");
+	printf("                                             \n");
+	printf("                 YOU WIN!                    \n");
+	printf("                                             \n");
+	printf(" - - - - - - - - - - - - - - - - - - - - - - \n");
+	printf(RESET);
+
+	printf("\nCongratulations!\n");
+	printf("You collected all the pellets!\n");
+	printf("Final Score: %d\n", finalScore);
+}
+
+static void showGameOverScreen(int finalScore){
+	clearScreen();
+
+	printf(PACMAN_YELLOW);
+	printf(" - - - - - - - - - - - - - - - - - - - - - - \n");
+	printf("                                             \n");
+	printf("                 GAME OVER                   \n");
+	printf("                                             \n");
+	printf(" - - - - - - - - - - - - - - - - - - - - - - \n");
+	printf(RESET);
+
+	printf("\nGame over!\n");
+	printf("The ghosts caught pac-man!\n");
+	printf("Final Score: %d\n", finalScore);
+
+}
+
+static void showQuitScreen(int finalScore){
+	clearScreen();
+
+	printf(PACMAN_YELLOW);
+	printf(" - - - - - - - - - - - - - - - - - - - - - - \n");
+	printf("              THANKS FOR PLAYING             \n");
+	printf(" - - - - - - - - - - - - - - - - - - - - - - \n");
+	printf(RESET);
+
+	printf("\nFinal Score: %d\n", finalScore);
+	printf("See you next time!\n");
+}
+
+static char askPlayAgain(void){
+	char choice;
+	
+	while(1){
+		printf("Press P to Play again or Q to Quit: ");
+		if (scanf(" %c", &choice) != 1){
+			return 'q';
+		}
+
+		switch (choice){
+			case 'p':
+			case 'P':
+				return 'p';
+
+			case 'q':
+			case 'Q':
+				return 'q';
+
+			default:
+				printf("Invalid choice. Please enter P or Q.\n");
+		}
+	}
+}
+
+static void resetGame(Position *pacman, Ghost ghosts[]) {
+	score = 0;
+	lives = STARTING_LIVES;
+
+	initBoard();
+
+	pacman -> row = 7;
+	pacman -> column = 14;
+
+	ghosts[0] = (Ghost){5, 17};
+	ghosts[1] = (Ghost){3, 14};
+	ghosts[2] = (Ghost){5, 1};
+	ghosts[3] = (Ghost){7, 10};
+
+	pelletEaten(*pacman);
+}
 static void moveGhost(Ghost *ghost) {
 	int newRow = ghost->row;
 	int newColumn = ghost->column;
@@ -184,62 +297,85 @@ static void drawMap(Position pacman, Ghost ghosts[]) {
 }
 
 int main(void) {
-	Position pacman = {7, 14};
-	Ghost ghosts[GHOST_COUNT] = {
-		{5, 17},
-		{3, 14},
-		{5, 1},
-		{7, 10}
-	};
+	Position pacman;
+	Ghost ghosts[GHOST_COUNT];
+
 	char direction;
+	char choice;
+	int gameRunning;
 
 	srand((unsigned int) time(NULL));
 
-	initBoard();
+	showStartScreen();
+	
+	do {
+		printf("Enter your choice: ");
 
-	printf("Score: %d   Pellets left: %d\n\n", score, pelletsLeft);
+		if (scanf(" %c", &choice) != 1) {
+			return 0;
+		}
 
-	pelletEaten(pacman);
+		if (choice == 'q' || choice == 'Q') {
+			showQuitScreen(0);
+			return 0;
+		}
+
+		if (choice != 'p' && choice != 'P') {
+			printf("Please enter P to play or Q to quit.\n");
+		}
+	} while (choice != 'p' && choice != 'P');
 
 	do {
-        clearScreen();
-	printf("Score: %d   Lives: %d   Pellets left: %d\n\n", score, lives, pelletsLeft);
-        drawMap(pacman, ghosts);
+		resetGame(&pacman, ghosts);
+		gameRunning = 1;
 
-        printf("Move (w/a/s/d), or q to quit: ");
+		while (gameRunning && lives > 0 && pelletsLeft > 0) {
+			clearScreen();
+			printf("Score: %d Lives: %d Pellets left: %d\n\n", score, lives, pelletsLeft);
 
-        if (scanf(" %c", &direction) != 1) {
-            break;
-        }
+			drawMap(pacman, ghosts);
+			printf("Move (w/a/s/d), or q to quit: ");
 
-        if (direction != 'q') {
-            movePacman(&pacman, direction);
-	    for (int i = 0; i < GHOST_COUNT; i++) {
-		    moveGhost(&ghosts[i]);
-	    }
+			if (scanf(" %c", &direction) != 1) {
+				direction = 'q';
+			}
 
-	    if (hasCollision(pacman, ghosts)) {
-		    lives--;
-		    printf("Pac-Man was caught! Lives remaining: %d\n", lives);
+			if (direction =='q' || direction == 'Q') { 
+				showQuitScreen(score);
+				return 0;
+			}
+
+			movePacman(&pacman, direction);
+
+			for (int i = 0; i < GHOST_COUNT; i++) {
+		    	moveGhost(&ghosts[i]);
+	    	}
+
+	    	if (hasCollision(pacman, ghosts)) {
+		    	lives--;
 		    
-		    if (lives > 0) {
-			    pacman = (Position){1, 1};
-			    ghosts[0] = (Ghost){5, 17};
-			    ghosts[1] = (Ghost){3, 14};
-			    ghosts[2] = (Ghost){5, 1};
-			    ghosts[3] = (Ghost){7, 10};
-		    }
-	    }
-        }
+		    	if (lives > 0) {
+			    	pacman = (Position){1, 1};
 
-    } while (direction != 'q' && lives > 0 && pelletsLeft > 0);
-	
-	clearScreen();
-	if (lives == 0) {
-		printf("Game over! Final score: %d\n", score);
-	} else if (pelletsLeft == 0) {
-		printf("You win! Final score: %d\n", score);
-	}
+			    	ghosts[0] = (Ghost){5, 17};
+			    	ghosts[1] = (Ghost){3, 14};
+			    	ghosts[2] = (Ghost){5, 1};
+			    	ghosts[3] = (Ghost){7, 10};
+		    	}
+	    	}
+		}	
+        
+		if (lives == 0) {
+			showGameOverScreen(score);
+		}
+		else if (pelletsLeft == 0) {
+			showWinScreen(score);
+		}
 
+		choice = askPlayAgain();
+
+    } while ( choice == 'p' || choice == 'P');
+
+	showQuitScreen(score);
 	return 0; 
 }
