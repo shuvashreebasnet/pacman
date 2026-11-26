@@ -14,6 +14,10 @@
 # define RED "\033[1;31m"
 # define PINK "\033[1;35m"
 # define CYAN "\033[1;36m"
+# define BLUE "\033[1;34m"
+# define POWER_PELLET_POINTS 30
+# define GHOST_EAT_POINTS 200
+# define POWER_DURATION 15
 # define RESET "\033[0m"
 
 typedef struct {
@@ -35,7 +39,7 @@ typedef enum {
 
 static const char map[MAP_HEIGHT][MAP_WIDTH + 1] = {
     "#############################",
-    "#.......#...........#.......#",
+    "#o......#...........#......o#",
     "#.#####.#####.#.#####.#####.#",
     "#.#.....#.....#.....#.....#.#",
     "#.#####.#####.#.#####.#####.#",
@@ -47,7 +51,7 @@ static const char map[MAP_HEIGHT][MAP_WIDTH + 1] = {
     "#.#####.#####.#.#####.#####.#",
     "#.#.....#.....#...........#.#",
     "#.#####.#####.#.#####.#####.#",
-    "#.............#.....#.......#",
+    "#o............#.....#......o#",
     "#############################"
 };
 
@@ -60,6 +64,7 @@ static char board[MAP_HEIGHT][MAP_WIDTH + 1];
 static int score = 0; 
 static int pelletsLeft = 0;
 static int lives = STARTING_LIVES;
+static int powerTimer = 0;
 
 static void initBoard(void) {
 	int row;
@@ -68,7 +73,7 @@ static void initBoard(void) {
 	for(row=0; row < MAP_HEIGHT; row++) {
 		strcpy(board[row], map[row]);
 		for(column = 0; column < MAP_WIDTH; column++) {
-			if(board[row][column] == '.') {
+			if(board[row][column] == '.' || board[row][column] == 'o') {
 				pelletsLeft++;
 			}
 		}
@@ -80,6 +85,11 @@ static void pelletEaten(Position pacman) {
 		board[pacman.row][pacman.column] = ' ';
 		score += PELLET_POINTS;
 		pelletsLeft--;
+	} else if (board[pacman.row][pacman.column] == 'o') {
+		board[pacman.row][pacman.column] = ' ';
+		score += POWER_PELLET_POINTS;
+		pelletsLeft--;
+		powerTimer = POWER_DURATION;
 	}
 }
 
@@ -92,8 +102,6 @@ static int isWalkable(int row, int column) {
 static void movePacman(Position *pacman, char direction) {
 	int newRow = pacman -> row;
 	int newColumn = pacman -> column;
-	pelletEaten(*pacman);
-
 	switch (direction) {
 		case 'w':
 			newRow--;
@@ -115,6 +123,8 @@ static void movePacman(Position *pacman, char direction) {
 	if (isWalkable(newRow, newColumn)) {
 		pacman -> row = newRow;
 		pacman -> column = newColumn;
+		pelletEaten(*pacman);
+
 	} else {
 		printf("Pac-Man cannot move through a wall.\n");
 	}
@@ -224,6 +234,7 @@ static char askPlayAgain(void){
 static void resetGame(Position *pacman, Ghost ghosts[]) {
 	score = 0;
 	lives = STARTING_LIVES;
+	powerTimer = 0;
 
 	initBoard();
 
@@ -231,7 +242,7 @@ static void resetGame(Position *pacman, Ghost ghosts[]) {
 	pacman -> column = 14;
 
 	ghosts[0] = (Ghost){5, 17};
-	ghosts[1] = (Ghost){3, 14};
+	ghosts[1] = (Ghost){3, 13};
 	ghosts[2] = (Ghost){5, 1};
 	ghosts[3] = (Ghost){7, 10};
 
@@ -261,11 +272,11 @@ static int hasCollision(Position pacman, Ghost ghosts[]) {
 	for (i = 0; i < GHOST_COUNT; i++) {
 		if (pacman.row == ghosts[i].row &&
 			pacman.column == ghosts[i].column) {
-			return 1;
+			return i;
 		}
 	}
 
-	return 0;
+	return -1;
 }
 
 static void drawMap(Position pacman, Ghost ghosts[]) {
@@ -281,7 +292,7 @@ static void drawMap(Position pacman, Ghost ghosts[]) {
 				int ghostFound = 0;
 				for (i = 0; i < GHOST_COUNT; i++) {
 					if (row == ghosts[i].row && column == ghosts[i].column) {
-						printf("%sG" RESET, ghostColors[i]);
+						printf("%sG" RESET, powerTimer > 0 ? BLUE : ghostColors[i]);
 						ghostFound = 1;
 						break;
 					}
@@ -297,9 +308,15 @@ static void drawMap(Position pacman, Ghost ghosts[]) {
 }
 
 int main(void) {
-	Position pacman;
+	Position pacman = {7, 14};
+	const Ghost ghostStarts[GHOST_COUNT] = {
+		{5, 17},
+		{3, 13},
+		{5,1},
+		{7,10}
+	};
 	Ghost ghosts[GHOST_COUNT];
-
+	memcpy(ghosts, ghostStarts, sizeof(ghosts));
 	char direction;
 	char choice;
 	int gameRunning;
@@ -351,19 +368,22 @@ int main(void) {
 		    	moveGhost(&ghosts[i]);
 	    	}
 
-	    	if (hasCollision(pacman, ghosts)) {
-		    	lives--;
-		    
+	    	int hit = hasCollision(pacman, ghosts);
+			if (hit >= 0 && powerTimer > 0) {
+				score += GHOST_EAT_POINTS;
+				ghosts[hit] = ghostStarts[hit];
+			}
+			else if (hit >= 0) {
+				lives--;
 		    	if (lives > 0) {
-			    	pacman = (Position){1, 1};
-
-			    	ghosts[0] = (Ghost){5, 17};
-			    	ghosts[1] = (Ghost){3, 14};
-			    	ghosts[2] = (Ghost){5, 1};
-			    	ghosts[3] = (Ghost){7, 10};
+			    	pacman = (Position){7, 13};
+					memcpy(ghosts, ghostStarts, sizeof(ghosts));
 		    	}
-	    	}
-		}	
+		}
+		if (powerTimer > 0) {
+			powerTimer--;
+		}
+		}
         
 		if (lives == 0) {
 			showGameOverScreen(score);
