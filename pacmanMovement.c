@@ -3,6 +3,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/select.h>
+#include <termios.h>
+#include <unistd.h>
 
 # define MAP_HEIGHT 15
 # define MAP_WIDTH 29
@@ -65,6 +68,50 @@ static int score = 0;
 static int pelletsLeft = 0;
 static int lives = STARTING_LIVES;
 static int powerTimer = 0;
+<<<<<<< HEAD
+=======
+static struct termios savedTerminal;
+
+static void restoreTerminal(void) {
+	tcsetattr(STDIN_FILENO, TCSANOW, &savedTerminal);
+}
+
+static int enableImmediateInput(void) {
+	struct termios terminal;
+
+	if (tcgetattr(STDIN_FILENO, &savedTerminal) == -1) {
+		return 0;
+	}
+
+	terminal = savedTerminal;
+	terminal.c_lflag &= ~(ICANON | ECHO);
+	terminal.c_cc[VMIN] = 0;
+	terminal.c_cc[VTIME] = 0;
+
+	if (tcsetattr(STDIN_FILENO, TCSANOW, &terminal) == -1) {
+		return 0;
+	}
+
+	atexit(restoreTerminal);
+	return 1;
+}
+
+static int readKey(char *key, int milliseconds) {
+	fd_set inputSet;
+	struct timeval timeout;
+
+	FD_ZERO(&inputSet);
+	FD_SET(STDIN_FILENO, &inputSet);
+	timeout.tv_sec = milliseconds / 1000;
+	timeout.tv_usec = (milliseconds % 1000) * 1000;
+
+	if (select(STDIN_FILENO + 1, &inputSet, NULL, NULL, &timeout) > 0) {
+		return read(STDIN_FILENO, key, 1) == 1;
+	}
+
+	return 0;
+}
+>>>>>>> 806bf13 (Make ghosts move while Pacman is still)
 
 static void initBoard(void) {
 	int row;
@@ -345,12 +392,20 @@ int main(void) {
 	do {
 		resetGame(&pacman, ghosts);
 		gameRunning = 1;
+<<<<<<< HEAD
+=======
+		if (!enableImmediateInput()) {
+			printf("Could not enable immediate keyboard input.\n");
+			return 1;
+		}
+>>>>>>> 806bf13 (Make ghosts move while Pacman is still)
 
 		while (gameRunning && lives > 0 && pelletsLeft > 0) {
 			clearScreen();
 			printf("Score: %d Lives: %d Pellets left: %d\n\n", score, lives, pelletsLeft);
 
 			drawMap(pacman, ghosts);
+<<<<<<< HEAD
 			printf("Move (w/a/s/d), or q to quit: ");
 
 			if (scanf(" %c", &direction) != 1) {
@@ -368,6 +423,28 @@ int main(void) {
 		    	moveGhost(&ghosts[i]);
 	    	}
 
+=======
+			printf("Move with W/A/S/D. Press Q to quit.\n");
+			fflush(stdout);
+
+			if (readKey(&direction, 250)) {
+				if (direction == 'q' || direction == 'Q') {
+					restoreTerminal();
+					showQuitScreen(score);
+					return 0;
+				}
+
+				if (direction == 'w' || direction == 'a' ||
+					direction == 's' || direction == 'd') {
+					movePacman(&pacman, direction);
+				}
+			}
+
+			for (int i = 0; i < GHOST_COUNT; i++) {
+		    	moveGhost(&ghosts[i]);
+	    	}
+
+>>>>>>> 806bf13 (Make ghosts move while Pacman is still)
 	    	int hit = hasCollision(pacman, ghosts);
 			if (hit >= 0 && powerTimer > 0) {
 				score += GHOST_EAT_POINTS;
@@ -384,6 +461,11 @@ int main(void) {
 			powerTimer--;
 		}
 		}
+<<<<<<< HEAD
+=======
+
+		restoreTerminal();
+>>>>>>> 806bf13 (Make ghosts move while Pacman is still)
         
 		if (lives == 0) {
 			showGameOverScreen(score);
@@ -399,3 +481,4 @@ int main(void) {
 	showQuitScreen(score);
 	return 0; 
 }
+
